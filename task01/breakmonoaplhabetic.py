@@ -1,6 +1,7 @@
 # break_monoalphabetic.py
 import random
 import string
+# This import now points to your new file
 import ngram_score
 from collections import Counter
 
@@ -10,15 +11,15 @@ from collections import Counter
 ENGLISH_FREQUENCIES_ORDER = 'ETAOINSHRDLCUMWFGYPBVKJXQZ'
 ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
-# --- 1. Initialization Function ---
+# --- 1. Initialization Function (No changes needed) ---
 
 def init_key(ciphertext: str) -> str:
     """
     Initializes a key based on frequency analysis, as required
-    by the lab sheet[cite: 129].
+    by the lab sheet.
     
     Returns the key in the format "VFT...", where plaintext 'A'
-    is mapped to 'V', 'B' to 'F', etc.[cite: 123, 242].
+    is mapped to 'V', 'B' to 'F', etc..
     """
     print("Initializing key using frequency analysis...")
     
@@ -63,7 +64,7 @@ def init_key(ciphertext: str) -> str:
     print(f"Initial key guess: {initial_key}")
     return initial_key
 
-# --- Helper Function ---
+# --- Helper Function (No changes needed) ---
 
 def decrypt(ciphertext: str, key_string: str) -> str:
     """
@@ -87,7 +88,7 @@ def decrypt(ciphertext: str, key_string: str) -> str:
             
     return decrypted_text
 
-# --- 2 & 3. Hill-Climbing Algorithm ---
+# --- 2 & 3. Hill-Climbing Algorithm (Refactored) ---
 
 def main():
     print("Starting Task 1.2: Hill-Climbing Attack")
@@ -100,13 +101,19 @@ def main():
         print("Error: Subst.txt not found. Please run Task 1.1 first.")
         return
 
-    # Load the n-gram scorer 
-    scorer = ngram_score.NgramScore('english_quadgrams.txt')
+    # --- REFACTORED LINE ---
+    # Load the n-gram scorer using your new lowercase class name
+    scorer = ngram_score.ngram_score('english_quadgrams.txt')
 
-    # 1. Get initial key [cite: 129]
+    # 1. Get initial key
     parent_key = init_key(ciphertext)
     parent_decrypted = decrypt(ciphertext, parent_key)
-    parent_score = scorer.score(parent_decrypted)
+    
+    # --- REFACTORED LINES ---
+    # Your new scorer doesn't clean for non-alphabetic chars.
+    # We must do it here so that n-grams like "THE " aren't scored.
+    cleaned_for_scoring = "".join(filter(str.isalpha, parent_decrypted))
+    parent_score = scorer.score(cleaned_for_scoring)
     
     best_key = parent_key
     best_score = parent_score
@@ -118,17 +125,21 @@ def main():
     print(f"Running {iterations} iterations of hill-climbing...")
     
     for i in range(iterations):
-        # Create a new key by swapping two letters [cite: 134]
+        # Create a new key by swapping two letters
         child_key_list = list(best_key)
         a, b = random.sample(range(26), 2) # Pick 2 random indices
         child_key_list[a], child_key_list[b] = child_key_list[b], child_key_list[a]
         child_key = "".join(child_key_list)
         
-        # 3. Measure the quality of the new key [cite: 136]
+        # 3. Measure the quality of the new key
         child_decrypted = decrypt(ciphertext, child_key)
-        child_score = scorer.score(child_decrypted)
         
-        # If it's an improvement, "climb the hill" [cite: 115]
+        # --- REFACTORED LINES ---
+        # We must clean this text too before scoring.
+        cleaned_for_scoring = "".join(filter(str.isalpha, child_decrypted))
+        child_score = scorer.score(cleaned_for_scoring)
+        
+        # If it's an improvement, "climb the hill"
         if child_score > best_score:
             best_score = child_score
             best_key = child_key
@@ -142,7 +153,7 @@ def main():
     print(f"Final Score: {best_score:.2f}")
     print(f"Final Key: {best_key}")
     
-    # Save the key to subst.key [cite: 123]
+    # Save the key to subst.key
     with open('subst.key', 'w', encoding='utf-8') as f:
         f.write(best_key)
     print("Discovered substitution key saved to subst.key")
